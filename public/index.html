@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Job Scheduler Dashboard</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+    }
+    header {
+      background: #1f2937;
+      color: white;
+      padding: 16px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    .container {
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+    }
+    button {
+      padding: 10px 16px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    pre {
+      background: #111827;
+      color: #e5e7eb;
+      padding: 12px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .row button {
+      flex: 1;
+    }
+  </style>
+</head>
+
+<body>
+<header>Job Scheduler-Dashboard</header>
+
+<div class="container">
+
+  <!-- Place holder to create jobs -->
+  <div class="card">
+    <h2>Create Job</h2>
+    <input id="c_schedule" placeholder="CRON schedule (*/5 * * * * *)" />
+    <input id="c_api" placeholder="API endpoint" />
+    <input id="c_type" value="ATLEAST_ONCE" />
+    <input id="c_alert" placeholder="Alert Webhook (optional)" />
+    <button onclick="createJob()">Create Job</button>
+    <pre id="createResult"></pre>
+  </div>
+
+  
+  <!-- placeholder to modify jobs -->
+  <div class="card">
+    <h2>Modify Job</h2>
+    <input id="m_jobId" placeholder="Job ID" />
+    <input id="m_schedule" placeholder="New schedule (optional)" />
+    <input id="m_api" placeholder="New API (optional)" />
+    <input id="m_type" placeholder="Type (ATLEAST_ONCE)" />
+    <input id="m_alert" placeholder="Alert Webhook (optional)" />
+    <button onclick="modifyJob()">Modify Job</button>
+    <pre id="modifyResult"></pre>
+  </div>
+
+  <!-- To Fetch last 5 API -->
+  <div class="card">
+    <h2>View Job Executions</h2>
+    <input id="jobId" placeholder="Job ID" />
+    <button onclick="getExecutions()">Fetch Executions</button>
+    <pre id="executions"></pre>
+  </div>
+
+  
+  
+  <!-- To monitor iportant metrics like active scheduler and failed/succes job attempts -->
+  <div class="card">
+    <h2>Observability</h2>
+    <div class="row">
+      <button onclick="getHealth()">Health</button>
+      <button onclick="getMetrics()">Metrics</button>
+    </div>
+    <pre id="obs"></pre>
+  </div>
+
+</div>
+
+<script>
+
+  //To call api for creating job simply direct 
+async function createJob() {
+  const payload = {
+    schedule: c_schedule.value,
+    api: c_api.value,
+    type: c_type.value || "ATLEAST_ONCE",
+  };
+  if (c_alert.value) payload.alertWebhook = c_alert.value;
+
+  const res = await fetch("/jobs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  createResult.innerText = JSON.stringify(await res.json(), null, 2);
+}
+
+
+//to call api for modify job after providing details
+async function modifyJob() {
+  const jobId = m_jobId.value;
+  const payload = {};
+
+  if (m_schedule.value) payload.schedule = m_schedule.value;
+  if (m_api.value) payload.api = m_api.value;
+  if (m_type.value) payload.type = m_type.value;
+  if (m_alert.value) payload.alertWebhook = m_alert.value;
+
+  const res = await fetch(`/jobs/${jobId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  modifyResult.innerText = JSON.stringify(await res.json(), null, 2);
+}
+
+
+//to call api for fetching last 5 job instance on giving jobid
+async function getExecutions() {
+  const res = await fetch(`/jobs/${jobId.value}/executions`);
+  executions.innerText = JSON.stringify(await res.json(), null, 2);
+}
+
+//monitor server active time 
+async function getHealth() {
+  const res = await fetch("/health");
+  obs.innerText = JSON.stringify(await res.json(), null, 2);
+}
+
+
+//monitor metrics of server like failed attemp api call
+
+async function getMetrics() {
+  const res = await fetch("/metrics");
+  obs.innerText = JSON.stringify(await res.json(), null, 2);
+}
+</script>
+
+</body>
+</html>
