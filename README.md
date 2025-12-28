@@ -1,286 +1,536 @@
-🕒 High-Throughput Job Scheduler
-
-A scalable and reliable Job Scheduler capable of executing a large number of scheduled HTTP jobs with high accuracy, at-least-once semantics, failure alerting, and observability.
-
-This project was built as part of the Lenskart Backend Hiring Assignment (Round 1).
-
-📌 Problem Statement
-
-Design and implement a high-throughput job scheduler that:
-
-Executes scheduled HTTP POST jobs
-
-Supports second-level CRON scheduling
-
-Minimizes scheduling drift
-
-Tracks execution history
-
-Alerts users on failures
-
-Is modular, maintainable, and extensible
-
-🧠 Key Features
-✅ Functional
-
-Create, modify, and schedule jobs using CRON (with seconds)
-
-Execute jobs with at-least-once semantics
-
-Track all executions (success & failure)
-
-View last executions per job
-
-Alert users on job failure
-
-Observability APIs (health & metrics)
-
-⚙️ Non-Functional
-
-High accuracy (minimal drift)
-
-High throughput (concurrent execution)
-
-Fault tolerant design
-
-Persistent storage
-
-Clean separation of concerns
-
-🏗️ Architecture Overview
-Components
-Client / Frontend
-        |
-        v
-     API Layer (Express)
-        |
-        v
- Scheduler (Priority Queue + Dynamic Sleep)
-        |
-        v
-     Worker Pool (Async HTTP Execution)
-        |
-        v
- Persistence Layer (SQLite)
-
-Key Design Choices
-
-Priority Queue (Min-Heap) for accurate scheduling
-
-Dynamic sleep (setTimeout) instead of polling
-
-At-least-once execution semantics
-
-In-memory cache + SQLite persistence
-
-Worker-based execution (non-blocking)
-
-⏱️ Scheduling Accuracy (No Drift)
-
-Jobs are scheduled using CRON-based nextExecutionTime
-
-Next run is computed from CRON, not from execution completion
-
-Scheduler sleeps until the exact next execution time
-
-Execution latency does not accumulate drift
-
-🔁 Execution Semantics
-At-Least-Once
-
-Jobs are guaranteed to execute at least once
-
-Failures are recorded and visible
-
-Duplicate execution is acceptable by design
-
-🚨 Failure Alerting
-
-Failures are surfaced in two ways:
-
-Frontend
-
-Failed executions are listed separately
-
-User does not need to scan logs
-
-Webhook (Optional)
-
-On failure, a POST request is sent to the provided webhook URL
-
-Useful for Slack / monitoring / email services
-
-📊 Observability
-Metrics
-
-Total executions
-
-Success count
-
-Failure count
-
-APIs
-
-/health → service health
-
-/metrics → execution metrics
-
-💾 Persistence (SQLite)
-Why SQLite?
-
-Lightweight
-
-No server setup
-
-Perfect for local dev and take-home assignments
-
-Stored Data
-
-Jobs → job metadata & next execution time
-
-Executions → execution history (success/failure)
-
-Restart Safety
-
-Jobs are loaded from DB on startup
-
-Heap is rebuilt in memory
-
-Scheduler resumes automatically
-
-🔄 Server Startup Flow
-
-Load jobs from SQLite
-
-Restore in-memory job map
-
-Rebuild priority queue (heap)
-
-Start scheduler
-
-🧪 APIs
-Create Job
-POST /jobs
-
+# High-Throughput Job Scheduler
+
+A high-accuracy, fault-tolerant job scheduling system designed to execute a large number of scheduled HTTP jobs with minimal drift, at-least-once semantics, persistent execution tracking, and failure alerting.
+
+Built as part of the Lenskart Backend Engineering Assignment (Round-1).
+
+---
+## Table of Contents
+
+- [Key-High-Lights](#-problem-statement)
+- [Problem Statement](#-problem-statement)
+- [Key Features](#-key-features)
+- [System Architecture](#-system-architecture)
+- [Folder Structure](#-folder-structure)
+- [API Design](#-api-design)
+- [Setup Instructions](#-setup-instructions)
+- [Trade-offs & Design Decisions](#-trade-offs--design-decisions)
+- [Future Improvements](#-future-improvements)
+- [Data Workflow](#-example-workflow)
+- [Tech Stack](#-tech-stack)
+- [Author](#-author)
+
+---
+
+
+ ## Key Highlights
+- Second-level CRON scheduling
+-  High accuracy with minimal schedule drift
+-  High-throughput asynchronous execution
+-  At-least-once execution guarantee
+-  Failure alerting (UI + Webhook)
+-  Durable persistence using SQLite
+-  Observability via metrics & health APIs
+-  Docker-ready deployment (optional)
+
+---
+
+## Problem Overview
+
+The system is designed to schedule and execute HTTP POST jobs at precise times defined by CRON expressions (including seconds).
+It must:
+- Handle thousands of jobs
+- maintain execution accuracy
+- Track historical executions
+- Alert users on failures
+- Remain robust across restarts
+
+---
+
+## System Architecture
+
+### Core Components
+**Backend**
+- Express.js REST APIs
+- Scheduler engine with priority queue
+- Worker pool for async job execution
+- SQLite for persistence
+
+**Frontend**
+- Lightweight HTML/CSS/JS dashboard
+- Job creation & modification
+- Execution history & failure visibility
+- Observability (metrics, health)
+
+**High-Level Architecture**
+
+```
++-------------+        +------------------+
+|   Frontend  | -----> |  Express API     |
++-------------+        +------------------+
+                               |
+                               v
+                    +----------------------+
+                    | Scheduler Engine     |
+                    | (Min-Heap + Sleep)   |
+                    +----------------------+
+                               |
+                               v
+                    +----------------------+
+                    | Worker Pool          |
+                    | (Async HTTP Calls)   |
+                    +----------------------+
+                               |
+                               v
+                    +----------------------+
+                    | SQLite Database      |
+                    | Jobs & Executions    |
+                    +----------------------+
+
+```
+
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/462335b4-da41-4e71-85d6-f99b6fd8fc15" />
+
+
+---
+
+## Architecture Principles (Why this is solid)
+
+### 1.Clear Separation of Concerns
+
+| Layer         | Responsibility                        |
+| ------------- | ------------------------------------- |
+| API           | Validation, routing, request handling |
+| Scheduler     | Time accuracy, job ordering           |
+| Worker Pool   | Execution & retries                   |
+| Storage       | Persistence & recovery                |
+| Observability | Metrics, health, logs                 |
+
+
+### 2. Scheduling Accuracy (Minimal Drift)
+
+- Scheduler uses a Min-Heap (Priority Queue) ordered by nextExecutionTime
+- Scheduler sleeps dynamically until the next job is due
+- Execution duration does not affect future scheduling
+- Multiple jobs scheduled at the same time are dispatched together
+- Ensures minimal drift even under heavy load
+
+### 3. High Throughput
+
+- O(log N) scheduling via heap
+- Async job execution (non-blocking)
+- Worker pool decoupled from scheduler
+- Designed to scale to thousands of jobs/sec
+
+### 4.Reliability & Fault Tolerance
+
+- At-least-once execution guarantee
+- Execution history persisted
+- Job recovery on server restart
+- Alerting on failure (Webhook)
+
+---  
+
+## Failure Handling & Alerts
+
+- When a job fails:
+- Failure is persisted in the database
+- Failure appears in frontend execution history
+- Optional webhook is triggered for external alerting
+- System continues scheduling unaffected
+- Failures are never silent.
+
+---
+
+## Persistence & Recovery Storage
+- SQLite stores:
+- Job metadata
+- Execution history
+- Restart Safety
+- Jobs are loaded from DB on startup
+- In-memory cache & heap are rebuilt
+- Scheduler resumes automatically
+- System survives crashes and restarts.
+
+---
+
+## FOLDER STRUCTURE
+
+```
+  JobScheduler/
+│
+├── public/
+│   └── index.html   # Simple frontend dashboard(UI)
+│
+├── src/
+│   ├── app.js         # Express app setup (middlewares, routes)
+│   ├── server.js      # Application entry point (starts server + scheduler)
+│
+│   ├── routes/
+│   │   └── jobs.js    # Routes Setup
+│
+│   ├── scheduler/
+│   │   └── scheduler.js   # Core scheduler logic (priority queue + dynamic sleep)
+│
+│   ├── workers/
+│   │   └── pool.js       # Worker pool to execute HTTP jobs asynchronously
+│
+│   ├── models/
+│   │   ├── job.js          # Job domain model
+│   │   └── execution.js    # Execution history model
+│
+│   ├── storage/
+│   │   ├── db.js           # SQLite DB connection
+│   │   ├── inMemory.js     # In-memory caches (jobs, executions)
+│   │   ├── jobHeaps.js     # Central job priority queue
+│   │   └── metrics.js      # Observability metrics
+│
+│   └── utils/
+│       └── minHeap.js      # Custom Min-Heap implementation
+│
+├── scheduler.db            # SQLite database file (persistent storage)
+│
+├── Dockerfile              # Docker image definition (Bonus)
+├── .dockerignore           # Docker ignore rules
+├── .gitignore              # Git ignore rules
+├── package.json            # Project config & scripts
+├── package-lock.json       # Dependency lock file
+└── README.md               # Documentation
+
+```
+---
+
+## API DESIGN
+
+| Step | Endpoint                  | Type   | Description                             |
+| ---- | --------------------------| -------|---------------------------------------------------------------|
+| 1️    | `/jobs`                   | POST   | Creates a new scheduled job and returns a unique jobId.       |
+| 2️    | `/jobs/:jobId`            | POST   | Updates job configuration (schedule, API,type).               |
+| 3️    | ` /jobs/:jobId/executions`| GET    | Fetches the last 5 executions for a given job.                |
+| 3️    | `/health`                 | GET    | Verifies that the scheduler service is running                |
+| 3️    | `/metrics`                | GET    | Provides basic execution metrics for monitoring and debugging.|
+
+
+##  API RESPONSES VIA POSTMAN
+
+POST http://localhost:3000/jobs
+```
 {
   "schedule": "*/5 * * * * *",
-  "api": "http://localhost:9999/test",
+  "api": "https://example.com/test",
   "type": "ATLEAST_ONCE",
-  "alertWebhook": "https://webhook.site/xxxx"
+  "alertWebhook": "https://webhook.site/a7de0880-979e-455d-a563-bc2c1400ad77"
 }
+```
+```
+{
+    "jobId": "691a6da4-d469-4f5e-9bba-bc0abf3736e3",
+    "nextExecutionTime": "2025-12-28T19:39:40.000Z"
+}
+```
 
-Modify Job
-PUT /jobs/:jobId
+PUT http://localhost:3000/jobs/JobID
+```
+{
+  "schedule": "*/10 * * * * *",
+  "api": "https://httpbin.org/post"
+}
+```
+```
+{
+    "message": "Job updated successfully",
+    "job": {
+        "jobId": "21715513-7b9e-4b43-90ff-7b5dcfdaf477",
+        "schedule": "*/10 * * * * *",
+        "api": "https://httpbin.org/post",
+        "type": "ATLEAST_ONCE",
+        "nextExecutionTime": "2025-12-28T19:43:00.000Z",
+        "alertWebhook": "https://webhook.site/a7de0880-979e-455d-a563-bc2c1400ad77"
+    }
+}
+```
 
-Get Job Executions
-GET /jobs/:jobId/executions
+GET  http://localhost:3000/health
+```
+{
+    "status": "OK",
+    "uptimeSeconds": 37.0122751,
+    "activeJobs": 2,
+    "timestamp": "2025-12-28T19:40:03.868Z"
+}
+```
+GET  http://localhost:3000/metrics
+
+```
+  {
+    "totalExecutions": 31,
+    "successCount": 0,
+    "failureCount": 31
+}
+```
+
+GET  http://localhost:3000/jobs/JOBID/executions
+
+```
+  [
+    {
+        "jobId": "21715513-7b9e-4b43-90ff-7b5dcfdaf477",
+        "executionTime": "2025-12-28T19:42:15.070Z",
+        "statusCode": 405,
+        "durationMs": 70,
+        "success": false
+    },
+    {
+        "jobId": "21715513-7b9e-4b43-90ff-7b5dcfdaf477",
+        "executionTime": "2025-12-28T19:42:10.081Z",
+        "statusCode": 405,
+        "durationMs": 77,
+        "success": false
+    },
+    {
+        "jobId": "21715513-7b9e-4b43-90ff-7b5dcfdaf477",
+        "executionTime": "2025-12-28T19:42:05.077Z",
+        "statusCode": 405,
+        "durationMs": 65,
+        "success": false
+    },
+    {
+        "jobId": "21715513-7b9e-4b43-90ff-7b5dcfdaf477",
+        "executionTime": "2025-12-28T19:42:00.084Z",
+        "statusCode": 405,
+        "durationMs": 69,
+        "success": false
+    },
+    {
+        "jobId": "21715513-7b9e-4b43-90ff-7b5dcfdaf477",
+        "executionTime": "2025-12-28T19:41:55.089Z",
+        "statusCode": 405,
+        "durationMs": 79,
+        "success": false
+    }
+]
+```
+
+GET http://localhost:3000/jobs/getAllJobs
+
+```
+[
+    {
+        "jobId": "691a6da4-d469-4f5e-9bba-bc0abf3736e3",
+        "schedule": "*/5 * * * * *",
+        "api": "https://example.com/test",
+        "type": "ATLEAST_ONCE",
+        "nextExecutionTime": "2025-12-28T19:43:05.000Z",
+        "alertWebhook": "https://webhook.site/a7de0880-979e-455d-a563-bc2c1400ad77"
+    }
+]
+```
+---
+
+## Data Flow
+This section describes how data flows through the system from job creation to execution, persistence, and alerting.
+
+1. `Job Creation Flow`
+
+```
+Client (UI / Postman)
+        ↓
+POST /jobs API
+        ↓
+Validate Job Spec (cron, API, type)
+        ↓
+Persist Job in SQLite DB
+        ↓
+Store Job in In-Memory Cache
+        ↓
+Insert Job into Priority Queue (Min-Heap)
+
+```
+**Explanation**
+- User submits a job specification.
+- The job is validated and stored persistently.
+- In-memory cache ensures fast access.
+- Min-Heap ensures efficient scheduling.
+
+ 2. `Scheduler Execution Flow`
+```
+Scheduler (Dynamic Sleep)
+        ↓
+Peek Min-Heap (nextExecutionTime)
+        ↓
+Sleep until job is due
+        ↓
+Pop due job(s)
+        ↓
+Validate stale entries
+        ↓
+Send job to Worker Pool
+```
+***Key Points***
+
+- Scheduler does not poll continuously
+- Sleeps until the nearest execution time
+- Executes multiple jobs scheduled at the same time together
+- Prevents schedule drift
+
+3. `Job Execution Flow`
+```
+Worker Pool
+        ↓
+HTTP POST to External API
+        ↓
+Measure execution duration
+        ↓
+Capture response status
+```
 
 
-Returns last 5 executions.
+**Execution Semantics**
+- At-least-once execution
+- Failures are allowed but recorded
+- Worker execution is asynchronous
 
-Observability
+4️. `Execution Persistence Flow`
+```
+Worker Result
+        ↓
+Create Execution Record
+        ↓
+Persist to SQLite DB
+        ↓
+Update In-Memory Execution Cache
+        ↓
+Update Metrics
+```
+
+**Stored Execution Data**
+- Execution timestamp
+- HTTP status code
+- Execution duration
+- Success / failure flag
+
+5️ `Failure Alert Flow`
+```
+Execution Failure
+        ↓
+Persist failure in DB
+        ↓
+Update metrics
+        ↓
+Trigger Alert Webhook (if configured)
+```
+
+Ensures failures are never lost
+Alerts do not block job execution
+Reliable failure visibility
+
+6️.`Observability Flow`
+```
+Monitoring Client
+        ↓
 GET /health
 GET /metrics
+        ↓
+Scheduler & Worker Stats
+```
 
-🖥️ Frontend
-
-A minimal dashboard is provided to:
-
-Create jobs
-
-Modify jobs
-
-View executions
-
-View failed executions separately
-
-View health & metrics
-
-Accessible at:
-
-http://localhost:3000
-
-🚀 How to Run
-1️⃣ Install dependencies
-npm install
-
-2️⃣ Start server
-node src/server.js
-
-3️⃣ Open dashboard
-http://localhost:3000
-
-🧹 Reset Database (Optional)
-
-Delete the file:
-
-scheduler.db
+**Exposed Observability**
+-Total executions
+-Success / failure counts
+-Service uptime
 
 
-On next start, a fresh database is created automatically.
+7️. `Recovery Flow (Server Restart)`
+```
+Server Restart
+        ↓
+Load jobs from SQLite DB
+        ↓
+Rebuild In-Memory Cache
+        ↓
+Repopulate Min-Heap
+        ↓
+Resume Scheduler
+```
+---
 
-📈 Scalability Considerations
+## Installation
 
-Current design supports:
+ ### Prerequisites
+  - Node.js v18+
+  - npm
+  - Git
+  - Docker (optional)
 
-Thousands of scheduled jobs
+### **LOCAL SETUP**:
 
-Concurrent execution via async workers
+   ```bash
+   git clone https://github.com/DEVANSH0507/Job-Scheduler.git
+   cd Job-Scheduler
+   npm install
+   npm start
+   ```
 
-Efficient scheduling via heap
+### **DOCKER DEPLOYMENT (BONUS 1)**:
 
-Future Extensions (Design-Only)
+ ```bash
+   docker build -t job-scheduler .
+   docker run -p 3000:3000 job-scheduler
+   ```
 
-Worker pool concurrency limits
+   
+### **Run the application**:
 
-Distributed scheduler with leader election
+  ```bash
+   npm run dev
+   npm start
+   ```
+### The server will start on
+```bash
+   http://localhost:3000
+```
+---
 
-Persistent queues (Redis/Kafka)
+## Trade-offs & Design Decisions
+ - SQLite vs Redis
+ - In-memory heap
+ - At-least-once semantics
 
-Retry with exponential backoff
+  --- 
 
-Horizontal scaling
+## Future Improvements
+ - Distributed queue (Redis)
+ - Leader election
+ - WebSocket alerts
+ - Retry backoff
+ - Sharding workers
 
-♻️ High Availability (Design)
+---
 
-DB is the source of truth
+## Conclusion
 
-Heap is rebuilt on restart
+(Why this design is scalable, reliable, and production-ready)
 
-Scheduler can be run in active-passive mode
 
-Jobs resume after crashes
 
-🧠 Key Design Takeaways
+ 
 
-Accuracy → CRON-based deterministic scheduling
 
-Reliability → At-least-once semantics + persistence
 
-Performance → Priority queue + async execution
 
-Observability → Metrics + execution history
 
-Simplicity → Minimal but extensible architecture
 
-📌 Tech Stack
 
-Node.js
 
-Express.js
 
-SQLite (better-sqlite3)
 
-Axios
 
-Vanilla HTML/CSS/JS
 
-✅ Status
 
-✔ Functional requirements complete
-✔ Non-functional requirements addressed
-✔ Bonus: persistence, accuracy, HA design
 
-👤 Author
 
-Devansh Gupta
+
+
+
+
+
