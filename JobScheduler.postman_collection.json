@@ -1,0 +1,141 @@
+{
+	"info": {
+		"_postman_id": "c9ec99be-d351-48e1-babd-472a74d10340",
+		"name": "JobScheduler",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "41311964"
+	},
+	"item": [
+		{
+			"name": "TO CREATE JOB",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/upload/text",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"upload",
+						"text"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "TO CHECK HEALTH",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/health",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"health"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "TO GET METRICS",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/metrics",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"metrics"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "TO FETCH LAST 5 RES OF JOB",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/jobs/e15871b2-5122-427c-aeae-061793c31235/executions",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"jobs",
+						"e15871b2-5122-427c-aeae-061793c31235",
+						"executions"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "TO MODIFY JOB",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"schedule\": \"*/10 * * * * *\",\r\n  \"api\": \"https://httpbin.org/post\"\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/jobs/2eb7af83-e1e8-4b44-b3d2-f540aafe8a48",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"jobs",
+						"2eb7af83-e1e8-4b44-b3d2-f540aafe8a48"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "TO GET ALL JOBS",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/jobs/getAllJobs",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"jobs",
+						"getAllJobs"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

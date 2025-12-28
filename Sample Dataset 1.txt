@@ -1,0 +1,29 @@
+Dataset 1
+
+// for JSON FORMAT use POSTMAN 
+{
+  "schedule": "*/5 * * * * *",
+  "api": "https://example.com/test",
+  "type": "ATLEAST_ONCE",
+  "alertWebhook": "https://webhook.site/a7de0880-979e-455d-a563-bc2c1400ad77"
+}
+
+//for front end 
+   //Implemented for only ATLEAST_ONCE
+   //for webkook u can use any webhook link generated or use false webhook for testing
+
+  schedule: */5 * * * * *,
+  api: https://example.com/test,
+  type: ATLEAST_ONCE,
+  alertWebhook: https://webhook.site/a7de0880-979e-455d-a563-bc2c1400ad77
+
+//for update 
+ 
+  job id :  copy id generated
+  schedule: */5 * * * * *,
+  api: https://example.com/test,
+  type: ATLEAST_ONCE,
+  alertWebhook: https://webhook.site/a7de0880-979e-455d-a563-bc2c1400ad77
+
+
+
