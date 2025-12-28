@@ -4,6 +4,8 @@ A high-accuracy, fault-tolerant job scheduling system designed to execute a larg
 
 Built as part of the Lenskart Backend Engineering Assignment (Round-1).
 
+For Sample Data Set postman collection and sample Dataset txt attached in repo
+
 ---
 ## Table of Contents
 
