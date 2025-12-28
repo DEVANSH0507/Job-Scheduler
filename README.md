@@ -7,17 +7,17 @@ Built as part of the Lenskart Backend Engineering Assignment (Round-1).
 ---
 ## Table of Contents
 
-- [Key-High-Lights](#-problem-statement)
-- [Problem Statement](#-problem-statement)
-- [Key Features](#-key-features)
-- [System Architecture](#-system-architecture)
-- [Folder Structure](#-folder-structure)
-- [API Design](#-api-design)
-- [Setup Instructions](#-setup-instructions)
-- [Trade-offs & Design Decisions](#-trade-offs--design-decisions)
-- [Future Improvements](#-future-improvements)
-- [Data Workflow](#-example-workflow)
-- [Tech Stack](#-tech-stack)
+- [Key-High-Lights](#-problem-statement)             - To see imortant feature implemented
+- [Problem Overview](#-problem-statement)            - problem understanding
+- [System Architecture](#-system-architecture)       - Architecture
+- [Architecture Principle](#-system-architecture)    -To understand what benifits of implementation and fullfill ments of requirements
+- [Folder Structure](#-folder-structure)             - Folder structure of project
+- [API Design](#-api-design)                         - Api data and response
+- [Data Workflow](#-example-workflow)                - Data flow in Api and understanding of each api work anf functionality
+- [Setup Instructions](#-setup-instructions)         - How to install and commands
+- [Trade-offs & Design Decision](#-trade-offs--design-decisions)      - all trade offs possible and done
+- [Future Improvements](#-future-improvements)                        - what can added next to improve
+- [Tech Stack](#-tech-stack)                                          - tech stack 
 - [Author](#-author)
 
 ---
@@ -65,7 +65,7 @@ It must:
 **High-Level Architecture**
 
 ```
-+-------------+        +------------------+
++-------------+        +------------------+                            
 |   Frontend  | -----> |  Express API     |
 +-------------+        +------------------+
                                |
@@ -214,6 +214,8 @@ It must:
 ##  API RESPONSES VIA POSTMAN
 
 POST http://localhost:3000/jobs
+
+**INPUT**
 ```
 {
   "schedule": "*/5 * * * * *",
@@ -222,6 +224,7 @@ POST http://localhost:3000/jobs
   "alertWebhook": "https://webhook.site/a7de0880-979e-455d-a563-bc2c1400ad77"
 }
 ```
+**RESPONSE**
 ```
 {
     "jobId": "691a6da4-d469-4f5e-9bba-bc0abf3736e3",
@@ -230,12 +233,15 @@ POST http://localhost:3000/jobs
 ```
 
 PUT http://localhost:3000/jobs/JobID
+
+**INPUT**
 ```
 {
   "schedule": "*/10 * * * * *",
   "api": "https://httpbin.org/post"
 }
 ```
+**RESPONSE**
 ```
 {
     "message": "Job updated successfully",
@@ -251,6 +257,8 @@ PUT http://localhost:3000/jobs/JobID
 ```
 
 GET  http://localhost:3000/health
+
+**RESPONSE**
 ```
 {
     "status": "OK",
@@ -261,6 +269,7 @@ GET  http://localhost:3000/health
 ```
 GET  http://localhost:3000/metrics
 
+**RESPONSE**
 ```
   {
     "totalExecutions": 31,
@@ -271,6 +280,7 @@ GET  http://localhost:3000/metrics
 
 GET  http://localhost:3000/jobs/JOBID/executions
 
+**RESPONSE**
 ```
   [
     {
@@ -313,6 +323,7 @@ GET  http://localhost:3000/jobs/JOBID/executions
 
 GET http://localhost:3000/jobs/getAllJobs
 
+**RESPONSE**
 ```
 [
     {
@@ -420,9 +431,9 @@ Update metrics
 Trigger Alert Webhook (if configured)
 ```
 
-Ensures failures are never lost
-Alerts do not block job execution
-Reliable failure visibility
+- Ensures failures are recorded and user alerted
+- Alerts do not block job execution
+- Reliable failure visibility
 
 6️.`Observability Flow`
 ```
@@ -435,9 +446,9 @@ Scheduler & Worker Stats
 ```
 
 **Exposed Observability**
--Total executions
--Success / failure counts
--Service uptime
+- Total executions
+- Success / failure counts
+- Service uptime
 
 
 7️. `Recovery Flow (Server Restart)`
@@ -492,24 +503,56 @@ Resume Scheduler
 ---
 
 ## Trade-offs & Design Decisions
- - SQLite vs Redis
- - In-memory heap
- - At-least-once semantics
+
+- **In-memory cache is used for faster scheduling and execution**
+   - Trade-off: data must be reloaded on restart
+- ** Therefore SQLite is used to store jobs and executions because it is simple and reliable**
+   - Trade-off: not suitable for very large distributed systems
+- **Priority Queue (Min-Heap) is used to pick the next job efficiently instead array for linear search**
+   - Trade-off: extra logic is needed to ignore outdated heap entries
+- **Dynamic sleep scheduler is used to reduce CPU usage and drift**
+  - Trade-off: scheduler logic becomes slightly complex 
+- **Webhook-based alerts are used for job failure notifications**
+  - Trade-off: alert delivery depends on external services
+- **Single-node scheduler is implemented to keep the system simple**
+  - Trade-off: high availability is documented but not implemented as one scheduler can fail so need load balance+more scheduler
+- **Simple frontend dashboard is built only for visibility**
+  - Trade-off: UI is not production-level
 
   --- 
 
 ## Future Improvements
- - Distributed queue (Redis)
- - Leader election
- - WebSocket alerts
- - Retry backoff
- - Sharding workers
+- we can use better databse for better scalability like redis,Postgre SQL etc
+- we can use more than one scheduler and add load balancet to incerase throughput
+- we can limit record history to save memory
+- we can track average api running time and improve job scheduling
+- we can add user login system
+- Develop a seprate alerting system for job fail and use it
+- Develop better retry mechanism to decrease job failure
 
 ---
 
-## Conclusion
+## Tech Stacks
 
-(Why this design is scalable, reliable, and production-ready)
+| Layer            | Technology                | Purpose                |
+| ---------------- | ------------------------- | ---------------------- |
+| Backend Runtime  | Node.js (v18)             | Server-side execution  |
+| Web Framework    | Express.js                | REST API development   |
+| Scheduling       | Custom Scheduler          | Job scheduling logic   |
+| Data Structures  | Min-Heap (Priority Queue) | Efficient job ordering |
+| Database         | SQLite                    | Persistent storage     |
+| HTTP Client      | Axios                     | External API calls     |
+| Observability    | Custom Metrics            | Monitoring & debugging |
+| Alerts           | Webhook-based             | Failure notifications  |
+| Frontend         | HTML, CSS, JavaScript     | Dashboard UI           |
+| Containerization | Docker                    | Deployment (Bonus)     |
+| Version Control  | Git & GitHub              | Source code management |
+
+---
+
+## Author
+
+**DEVANSH GUPTA**
 
 
 
