@@ -8,6 +8,8 @@ const db = require("../storage/db");
 //it also save metrics
 //i have also implemented alert webhook here for alert mechanism
 
+//Worker poolhast to call api and retry once on failure in this implementation 
+//call api one time atleast on fail
 
 
 async function sendToWorker(job) {
@@ -16,7 +18,8 @@ async function sendToWorker(job) {
   try {
 
     const response = await axios.post(job.api);
-
+    
+    1//calculating time for which api is called like now-call time =total time taken
     const durationMs = Date.now()-startTime;
    
     //save execution response
@@ -29,7 +32,7 @@ async function sendToWorker(job) {
     });
 
     
-    //DB entry
+    //preparing database to save entry in database also to achieve persistence
     db.prepare(`
     INSERT INTO executions
     (jobId, executionTime, statusCode, durationMs, success)
@@ -42,7 +45,7 @@ async function sendToWorker(job) {
     1
 );
 
-
+   //update metrics to see 
     metrics.totalExecutions++;
     metrics.successCount++;
 

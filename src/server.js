@@ -5,14 +5,15 @@ const { sendToWorker } = require("./workers/pool.js")
 const path = require("path");
 app.use(express.static(path.join(__dirname, "../public")));
 const db = require("./storage/db");
-const { jobs } = require("./storage/inMemory");
-const { jobHeap } = require("./storage/jobHeaps.js");
+const { jobs } = require("./storage/inMemory"); //it a map of job id -- job schema
+const { jobHeap } = require("./storage/jobHeaps.js");  // itwill fetch centralized min heap 
 
 //server setup when start first check database file to load all job entries which is to perform
 
 const PORT = 3000;
 const rows = db.prepare(`SELECT * FROM jobs`).all();
 
+//this is basically database call so that on starting server first load all job in database
 rows.forEach(row => {
   const job = {
     ...row,

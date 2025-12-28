@@ -7,6 +7,8 @@ const app = express();
 
 app.use(express.json()); //middleware 
 
+// Here check health and metrics implemented directly and route calling for job routes
+
 //check health of server
 app.get("/health", (req, res) => {
   res.json({ status: "OK" ,
@@ -20,7 +22,6 @@ app.get("/health", (req, res) => {
 app.get("/metrics", (req, res) => {
   res.json(metrics);
 });
-
 
 //add jobroutes to main
 app.use("/jobs", jobRoutes);

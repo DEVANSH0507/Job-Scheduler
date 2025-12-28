@@ -7,6 +7,11 @@ const { parseExpression } = require("cron-parser");
 //but if heap has val then it will sleep for only time min(1s,heap.top)
 //this way drift decrease
 
+//simply heap will give job to be executed and scheduler will chk it to get if any job need to send in worker pool
+//As we know to call api it will take time so scheduler will just add api call to worker pool dont wait actually 
+//this way scheduler can work fast and worker pool has to work
+//like long termdispatcher and shoet term dispatcher in os process scheduling
+
 
 let schedulerTimer = null;
 
