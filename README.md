@@ -487,6 +487,8 @@ Resume Scheduler
 ### **DOCKER DEPLOYMENT (BONUS 1)**:
 
  ```bash
+   git clone https://github.com/DEVANSH0507/Job-Scheduler.git
+   cd Job-Scheduler
    docker build -t job-scheduler .
    docker run -p 3000:3000 job-scheduler
    ```
