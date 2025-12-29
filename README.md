@@ -510,7 +510,7 @@ Resume Scheduler
 
 - **In-memory cache is used for faster scheduling and execution**
    - Trade-off: data must be reloaded on restart
-- ** Therefore SQLite is used to store jobs and executions because it is simple and reliable**
+- **Therefore SQLite is used to store jobs and executions because it is simple and reliable**
    - Trade-off: not suitable for very large distributed systems
 - **Priority Queue (Min-Heap) is used to pick the next job efficiently instead array for linear search**
    - Trade-off: extra logic is needed to ignore outdated heap entries
